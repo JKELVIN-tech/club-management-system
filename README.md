@@ -1,7 +1,7 @@
 # Club Management System
 
 A web-based platform for managing club membership, finances, events, and
-communication — built per the project proposal (Roy Ngalu Waigi, REG 24/02350).
+communication.
 
 ## Stack
 
