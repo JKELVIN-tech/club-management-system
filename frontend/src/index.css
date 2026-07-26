@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-body: "Inter", "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-paper: #f6f4ee;
+  --color-ink: #16241f;
+  --color-forest: #1f5f4f;
+  --color-forest-dark: #123c31;
+  --color-forest-light: #e7efe9;
+  --color-amber: #d98e2b;
+  --color-amber-light: #f6e6c8;
+  --color-slate: #5c6b64;
+  --color-border: #dcd8cc;
+  --color-danger: #b3432f;
+  --color-danger-light: #f6e2dc;
+  --color-success: #2f7a52;
+  --color-success-light: #e2efe6;
+}
+
+html {
+  font-family: var(--font-body);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Signature motif: a perforated/stitched edge, echoing a physical membership
+   card, used on auth screens and member ID cards throughout the app. */
+.stitched-edge {
+  background-image: repeating-linear-gradient(
+    90deg,
+    var(--color-border) 0,
+    var(--color-border) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  background-position: bottom;
+  background-size: 14px 2px;
+  background-repeat: repeat-x;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-amber);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

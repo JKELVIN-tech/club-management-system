@@ -1,0 +1,9 @@
+import { PrismaClient } from '@prisma/client';
+
+// Single shared Prisma instance across the app (avoids exhausting DB connections
+// in dev with hot-reload, and is the standard pattern for Prisma + Express).
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+});
+
+export default prisma;

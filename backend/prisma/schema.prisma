@@ -1,0 +1,234 @@
+// Club Management System - Database Schema
+// Covers: Members, Finance, Events, Communication, Reporting, RBAC
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// RBAC / MEMBERS MODULE
+// ─────────────────────────────────────────────
+
+enum Role {
+  ADMIN       // Full system access
+  TREASURER   // Financial module + own profile
+  SECRETARY   // Events, communication, member mgmt
+  MEMBER      // Own profile, view events, view own dues
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+  EXPELLED
+}
+
+model Member {
+  id               String            @id @default(uuid())
+  firstName        String
+  lastName         String
+  email            String            @unique
+  phone            String?
+  passwordHash     String
+  role             Role              @default(MEMBER)
+  status           MembershipStatus  @default(PENDING)
+  joinDate         DateTime          @default(now())
+  profilePhotoUrl  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  // Relations
+  payments         Payment[]
+  eventAttendance  EventAttendance[]
+  notifications    NotificationRecipient[]
+  auditLogs        AuditLog[]
+  createdEvents    Event[]           @relation("EventCreator")
+
+  @@index([status])
+  @@index([role])
+}
+
+// ─────────────────────────────────────────────
+// FINANCIAL MANAGEMENT MODULE
+// ─────────────────────────────────────────────
+
+enum FeeType {
+  MEMBERSHIP_DUE
+  LEVY
+  EVENT_FEE
+  FINE
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  OVERDUE
+  WAIVED
+}
+
+enum PaymentMethod {
+  CASH
+  MPESA
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+model FeeSchedule {
+  id          String    @id @default(uuid())
+  name        String
+  type        FeeType
+  amount      Decimal   @db.Decimal(10, 2)
+  dueDate     DateTime?
+  recurring   Boolean   @default(false)
+  description String?
+  createdAt   DateTime  @default(now())
+
+  payments    Payment[]
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  memberId      String
+  member        Member        @relation(fields: [memberId], references: [id])
+  feeScheduleId String?
+  feeSchedule   FeeSchedule?  @relation(fields: [feeScheduleId], references: [id])
+  amount        Decimal       @db.Decimal(10, 2)
+  amountPaid    Decimal       @db.Decimal(10, 2) @default(0)
+  status        PaymentStatus @default(PENDING)
+  method        PaymentMethod?
+  receiptNumber String?       @unique
+  transactionRef String?
+  paidAt        DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([memberId])
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────
+// EVENT MANAGEMENT MODULE
+// ─────────────────────────────────────────────
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+model Event {
+  id            String            @id @default(uuid())
+  title         String
+  description   String?
+  location      String?
+  startTime     DateTime
+  endTime       DateTime
+  status        EventStatus       @default(DRAFT)
+  capacity      Int?
+  feeAmount     Decimal?          @db.Decimal(10, 2)
+  createdById   String
+  createdBy     Member            @relation("EventCreator", fields: [createdById], references: [id])
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  attendance    EventAttendance[]
+  postEventReport EventReport?
+
+  @@index([status])
+  @@index([startTime])
+}
+
+enum AttendanceStatus {
+  REGISTERED
+  ATTENDED
+  ABSENT
+  CANCELLED
+}
+
+model EventAttendance {
+  id        String            @id @default(uuid())
+  eventId   String
+  event     Event             @relation(fields: [eventId], references: [id])
+  memberId  String
+  member    Member            @relation(fields: [memberId], references: [id])
+  status    AttendanceStatus  @default(REGISTERED)
+  registeredAt DateTime       @default(now())
+
+  @@unique([eventId, memberId])
+  @@index([eventId])
+}
+
+model EventReport {
+  id              String   @id @default(uuid())
+  eventId         String   @unique
+  event           Event    @relation(fields: [eventId], references: [id])
+  attendeeCount   Int
+  summary         String
+  challenges      String?
+  recommendations String?
+  createdAt       DateTime @default(now())
+}
+
+// ─────────────────────────────────────────────
+// COMMUNICATION MODULE
+// ─────────────────────────────────────────────
+
+enum NotificationType {
+  ANNOUNCEMENT
+  REMINDER
+  FINANCIAL_ALERT
+  EVENT_UPDATE
+  DIRECT_MESSAGE
+}
+
+model Notification {
+  id        String                  @id @default(uuid())
+  title     String
+  body      String
+  type      NotificationType        @default(ANNOUNCEMENT)
+  senderId  String?
+  createdAt DateTime                @default(now())
+
+  recipients NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  memberId       String
+  member         Member       @relation(fields: [memberId], references: [id])
+  readAt         DateTime?
+  deliveredAt    DateTime     @default(now())
+
+  @@unique([notificationId, memberId])
+  @@index([memberId])
+}
+
+// ─────────────────────────────────────────────
+// AUDIT / REPORTING SUPPORT
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  memberId   String?
+  member     Member?  @relation(fields: [memberId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
