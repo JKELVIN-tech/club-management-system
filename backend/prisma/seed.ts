@@ -4,7 +4,15 @@ import bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminEmail = 'admin@club.local';
+  const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@club.local';
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+  if (!adminPassword) {
+    throw new Error(
+      'SEED_ADMIN_PASSWORD is required when running the database seed. Set it in your local environment and never commit it.'
+    );
+  }
+
   const existing = await prisma.member.findUnique({ where: { email: adminEmail } });
 
   if (existing) {
@@ -12,7 +20,7 @@ async function main() {
     return;
   }
 
-  const passwordHash = await bcrypt.hash('ChangeMe123!', 12);
+  const passwordHash = await bcrypt.hash(adminPassword, 12);
 
   const admin = await prisma.member.create({
     data: {
@@ -25,8 +33,7 @@ async function main() {
     },
   });
 
-  console.log('Seeded admin account:', admin.email);
-  console.log('Default password: ChangeMe123! — change this immediately after first login.');
+  console.log(`Seeded admin account: ${admin.email}`);
 }
 
 main()
