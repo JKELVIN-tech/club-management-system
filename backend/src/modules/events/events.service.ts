@@ -55,18 +55,30 @@ export async function listEvents(filters: ListEventsFilters) {
   });
 }
 
-export async function getEventById(id: string) {
+export async function getEventById(id: string, canViewPrivateDetails = false) {
   const event = await prisma.event.findUnique({
     where: { id },
     include: {
       ...EVENT_INCLUDE,
-      attendance: {
-        include: { member: { select: { id: true, firstName: true, lastName: true, email: true } } },
-      },
+      attendance: canViewPrivateDetails
+        ? {
+            include: {
+              member: { select: { id: true, firstName: true, lastName: true } },
+            },
+          }
+        : false,
       postEventReport: true,
     },
   });
+
   if (!event) throw new AppError('Event not found', 404);
+
+  // Do not allow ordinary members to bypass the published-event rule by
+  // requesting a draft/cancelled event directly by ID.
+  if (!canViewPrivateDetails && event.status !== EventStatus.PUBLISHED) {
+    throw new AppError('Event not found', 404);
+  }
+
   return event;
 }
 
