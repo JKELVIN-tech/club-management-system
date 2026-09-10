@@ -70,8 +70,13 @@ export async function loginMember(email: string, password: string) {
     throw new AppError('Invalid email or password', 401);
   }
 
-  if (member.status === MembershipStatus.SUSPENDED || member.status === MembershipStatus.EXPELLED) {
-    throw new AppError('Your account is not currently active. Contact a club official.', 403);
+  if (member.status !== MembershipStatus.ACTIVE) {
+    throw new AppError(
+      member.status === MembershipStatus.PENDING
+        ? 'Your account is pending approval. Contact a club official once your membership has been approved.'
+        : 'Your account is not currently active. Contact a club official.',
+      403
+    );
   }
 
   const token = signToken({
