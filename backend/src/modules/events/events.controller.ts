@@ -29,7 +29,8 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getById = asyncHandler(async (req: Request, res: Response) => {
-  const event = await eventsService.getEventById(req.params.id);
+  const isPrivileged = ['ADMIN', 'SECRETARY'].includes(req.user!.role);
+  const event = await eventsService.getEventById(req.params.id, isPrivileged);
   res.json({ event });
 });
 
