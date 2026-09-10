@@ -23,8 +23,10 @@ interface ListMembersFilters {
 }
 
 export async function listMembers(filters: ListMembersFilters) {
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 25;
+  const page = Number.isInteger(filters.page) && (filters.page as number) > 0 ? filters.page as number : 1;
+  const pageSize = Number.isInteger(filters.pageSize) && (filters.pageSize as number) > 0
+    ? Math.min(filters.pageSize as number, 100)
+    : 25;
 
   const where: any = {};
   if (filters.status) where.status = filters.status;
